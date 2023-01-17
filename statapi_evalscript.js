@@ -19,7 +19,7 @@ function setup() {
         },
         {
           id: "indices",
-          bands: ["NDVI", "NDVI_RE1", "NBWI", "NBSI", "CLP"],
+          bands: ["NDVI", "NDVI_RE1", "NDMI", "NBSI", "CLP"],
           sampleType: "UINT16"
         },
         {
@@ -37,10 +37,14 @@ function setup() {
       // Bare Soil Index
       let NBSI = index((samples.B11 + samples.B04), (samples.B08 + samples.B02));
 
+      
+
       // Moisture index (B03 - B08) / (B03 + B08)
 
       //let NBWI = index((samples.B03 + samples.B04))
-      let NBWI = index(samples.B03, samples.B08);
+      //let NBWI = index(samples.B03, samples.B08);
+
+      let NDMI = index(samples.B02, samples.B06)
   
       // cloud probability normalized to interval [0, 1]
       let CLP = samples.CLP / 255.0;
@@ -56,7 +60,7 @@ function setup() {
           bands: [samples.B01, samples.B02, samples.B03, samples.B04, samples.B05, samples.B06,
                   samples.B07, samples.B08, samples.B8A, samples.B09, samples.B11, samples.B12],
           masks: [samples.CLM],
-          indices: [toUINT(NDVI, f), toUINT(NDVI_RE1, f), toUINT(NBSI, f), toUINT(CLP, f), toUINT(NBWI, f)],
+          indices: [toUINT(NDVI, f), toUINT(NDVI_RE1, f), toUINT(NBSI, f), toUINT(CLP, f), toUINT(NDMI, f)],
           dataMask: [combinedMask]
       };
   }
