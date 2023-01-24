@@ -135,6 +135,7 @@ class App(customtkinter.CTk):
                 self.marker_list.append(self.map_widget.set_marker(poly[1].centroid.y, poly[1].centroid.x))
                 print(list(poly[1].exterior.coords))
                 self.map_widget.set_polygon(poly[1].exterior.coords, outline_color="red", fill_color="yellow")
+                print(poly[1].exterior.coords)
 
 
 
