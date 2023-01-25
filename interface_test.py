@@ -3,9 +3,13 @@ from tkintermapview import TkinterMapView
 import geopandas as gpd
 import json
 from meteostat import Daily, Point
+from shapely.geometry import Polygon, mapping
+import shapely as sh
+from model import *
 polygon = gpd.read_file('agri_46.geojson')
 polygon["centroid"] = polygon.geometry.centroid
 print(list(polygon['name']))
+
 
 with open('agri_46.geojson') as f:
     data = json.load(f)
@@ -16,7 +20,6 @@ for feature in data['features']:
     #print(feature['geometry']['coordinates'])
     break
 
-
 customtkinter.set_appearance_mode("System")  # Modes: "System" (standard), "Dark", "Light"
 customtkinter.set_default_color_theme("green")  # Themes: "blue" (standard), "green", "dark-blue"
 
@@ -24,8 +27,8 @@ customtkinter.set_default_color_theme("green")  # Themes: "blue" (standard), "gr
 class App(customtkinter.CTk):
 
     APP_NAME = "Agurotech map"
-    WIDTH = 800
-    HEIGHT = 500
+    WIDTH = 1250    
+    HEIGHT = 600
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -47,7 +50,7 @@ class App(customtkinter.CTk):
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
-        self.frame_left = customtkinter.CTkFrame(master=self, width=150, corner_radius=0, fg_color=None)
+        self.frame_left = customtkinter.CTkFrame(master=self, width=300, corner_radius=0, fg_color=None)
         self.frame_left.grid(row=0, column=0, padx=0, pady=0, sticky="nsew")
 
         self.frame_right = customtkinter.CTkFrame(master=self, corner_radius=0)
@@ -57,20 +60,19 @@ class App(customtkinter.CTk):
 
         self.frame_left.grid_rowconfigure(2, weight=1)
 
-        #self.combobox_1 = customtkinter.CTkOptionMenu(master = self.frame_left, values=["Option 1", "Option 2", "Option 42 long long long..."])
-        self.combobox_1 = customtkinter.CTkOptionMenu(master = self.frame_left, values=list(polygon['name']), command=self.update_location)
+        # Buttons
+        self.combobox_1 = customtkinter.CTkOptionMenu(master = self.frame_left, values=(list(polygon['name'])), command=self.update_location)
         self.combobox_1.grid(pady = (20,0), padx = (20,20), row = 2, column = 0)
 
-
-        self.button_1 = customtkinter.CTkButton(master=self.frame_left,
-                                                text="Set Marker",
-                                                command=self.set_marker_event)
+        self.button_1 = customtkinter.CTkButton(master=self.frame_left, text="Set Marker", command=self.set_marker_event)
         self.button_1.grid(pady=(20, 0), padx=(20, 20), row=0, column=0)
 
-        self.button_2 = customtkinter.CTkButton(master=self.frame_left,
-                                                text="Clear Markers",
-                                                command=self.clear_marker_event)
+        self.button_2 = customtkinter.CTkButton(master=self.frame_left, text="Clear Markers", command=self.clear_marker_event)
         self.button_2.grid(pady=(20, 0), padx=(20, 20), row=1, column=0)
+
+        self.button_3 = customtkinter.CTkButton(master=self.frame_left, text = "Get predictions", command  = self.get_predictions)
+        self.button_3.grid(pady=(20, 0), padx=(20, 20), row=2, column=1)
+
 
         self.map_label = customtkinter.CTkLabel(self.frame_left, text="Tile Server:", anchor="w")
         self.map_label.grid(row=3, column=0, padx=(20, 20), pady=(20, 0))
@@ -123,6 +125,14 @@ class App(customtkinter.CTk):
         for marker in self.marker_list:
             marker.delete()
 
+    def rev_coords(self, poly):
+        #poly = Polygon([[14.471329,46.037286],[14.467378,46.036733],[14.468441,46.034822]])
+        poly_mapped = mapping(poly)
+        poly_coordinates = poly_mapped['coordinates'][0]
+        poly_ = [(coords[1],coords[0]) for coords in poly_coordinates]
+        print(json.dumps(poly_))
+        
+
     def update_location(self, location):
         #self.map_widget.set_address(self.combobox_1.get())
         print(self.combobox_1.get())
@@ -133,11 +143,12 @@ class App(customtkinter.CTk):
             if poly[0] == name:
                 self.map_widget.set_position(poly[1].centroid.y, poly[1].centroid.x)
                 self.marker_list.append(self.map_widget.set_marker(poly[1].centroid.y, poly[1].centroid.x))
-                print(list(poly[1].exterior.coords))
-                self.map_widget.set_polygon(poly[1].exterior.coords, outline_color="red", fill_color="yellow")
-                print(poly[1].exterior.coords)
+                coord_list = list(poly[1].exterior.coords)
+                coord_list = [sublist[::-1] for sublist in coord_list[::-1]]
+                self.map_widget.set_polygon(coord_list, outline_color="red", fill_color="yellow")
 
-
+    def get_predictions(self):
+        return
 
 
     def change_appearance_mode(self, new_appearance_mode: str):
