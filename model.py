@@ -8,9 +8,16 @@ def root_mean_squared_error(y_true, y_pred):
     return K.sqrt(K.mean(K.square(y_pred - y_true)))
 
 
+def norm_df(df, cols):
+    for col in cols:
+        df[col] = df[col] / df[col].max()
+    return df
+
+
 def get_data(data_set, location, date_range):
     start_date = date_range[0]
     end_date = date_range[-1]
+    data_set = norm_df(data_set, ['tavg','prcp','tavg_shift','prcp_shift'])
     data_set['date'] = pd.to_datetime(data_set['date'])
     data_set = data_set.query(
         'date >= @start_date & date <= @end_date & name == @location')

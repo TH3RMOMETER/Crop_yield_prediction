@@ -28,7 +28,7 @@ customtkinter.set_default_color_theme("green")  # Themes: "blue" (standard), "gr
 
 class App(customtkinter.CTk):
 
-    APP_NAME = "Agurotech map"
+    APP_NAME = "Agurotech NDVI"
     WIDTH = 1250    
     HEIGHT = 600
 
@@ -45,6 +45,7 @@ class App(customtkinter.CTk):
         self.createcommand('tk::mac::Quit', self.on_closing)
 
         self.marker_list = []
+
 
     # ============ create two CTkFrames ============
 
@@ -127,23 +128,21 @@ class App(customtkinter.CTk):
         self.frame_pred.grid_columnconfigure(1, weight=0)
         self.frame_pred.grid_columnconfigure(2, weight=1)
 
-        self.button_6 = customtkinter.CTkButton(master=self.frame_pred, text="get frame", command= None)
-        self.button_6.grid(row=0, column=3, sticky="nswe", padx=(12,0), pady=(20,20))
-
+        #self.button_6 = customtkinter.CTkButton(master=self.frame_pred, text="get frame", command= None)
+        #self.button_6.grid(row=0, column=3, sticky="nswe", padx=(12,0), pady=(20,20))
 
         self.fig, self.ax = plt.subplots()
-        self.fig.set_size_inches(11,5.3)
-        self.x_test = np.array([1,2,3,4,5,6,7,8,9,10])
-        self.y_test = np.array([1,2,3,4,5,6,7,8,9,10])
-        #self.ax.bar(self.x, self.y)
+        self.fig.set_size_inches(9,8)
         self.canvas = FigureCanvasTkAgg(self.fig,master=self.frame_pred)
         self.canvas.draw()
-        self.canvas.get_tk_widget().place(relx=0.01, rely=0.025)
+        self.canvas.get_tk_widget().place(relx=0.05, rely=0.05)
 
+        
     # ============ default values ============
         self.map_widget.set_address("Amsterdam")
         self.map_option_menu.set("OpenStreetMap")
         self.appearance_mode_optionemenu.set("Dark")
+
 
     # ============ functions ============
 
@@ -164,8 +163,29 @@ class App(customtkinter.CTk):
         poly_coordinates = poly_mapped['coordinates'][0]
         poly_ = [(coords[1],coords[0]) for coords in poly_coordinates]
         print(json.dumps(poly_))
-        
 
+
+    def plot_ndvi(self, poly):
+        self.fig, self.ax = plt.subplots()
+        self.fig.set_size_inches(11,5)
+        self.canvas = FigureCanvasTkAgg(self.fig,master=self.frame_pred)
+        self.canvas.draw()
+        self.canvas.get_tk_widget().place(relx=0.01, rely=0.025)
+
+        self.start_date = self.entry_date.get()
+        self.end_date = datetime.strptime(self.start_date, '%Y-%m-%d') + timedelta(days=13)
+
+        print(self.start_date,self.end_date)
+
+        self.daterange = pd.date_range(self.start_date, self.end_date, freq = 'd')
+        self.ndvi_pred = get_model_predictions(model_path,poly,self.daterange)[0]
+
+        self.ax.plot(self.daterange, self.ndvi_pred)
+        self.canvas = FigureCanvasTkAgg(self.fig,master=self.frame_pred)
+        self.canvas.draw()
+        self.canvas.get_tk_widget().place(relx=0.01, rely=0.025)
+
+        
     def update_location(self, location):
         #self.map_widget.set_address(self.combobox_1.get())
         #print(self.combobox_1.get())
@@ -180,6 +200,8 @@ class App(customtkinter.CTk):
                 coord_list = [sublist[::-1] for sublist in coord_list[::-1]]
                 self.map_widget.set_polygon(coord_list, outline_color="red", fill_color="yellow")
 
+                #self.plot_ndvi(poly[0])
+
                 self.start_date = self.entry_date.get()
                 self.end_date = datetime.strptime(self.start_date, '%Y-%m-%d') + timedelta(days=13)
 
@@ -188,24 +210,25 @@ class App(customtkinter.CTk):
                 self.daterange = pd.date_range(self.start_date, self.end_date, freq = 'd')
                 self.ndvi_pred = get_model_predictions(model_path,poly[0],self.daterange)[0]
 
+                #self.ndvi_pred = [pred - 1 for pred in self.ndvi_pred]
 
-                self.ax.plot(self.daterange, self.ndvi_pred)
+                self.ax.plot(self.daterange, self.ndvi_pred, label = name)
+                self.ax.set_title("NDVI Predictions")
+                self.ax.legend(loc = 'upper right', frameon = True)
                 self.canvas = FigureCanvasTkAgg(self.fig,master=self.frame_pred)
                 self.canvas.draw()
-                self.canvas.get_tk_widget().place(relx=0.01, rely=0.025)
-
-
+                self.canvas.get_tk_widget().place(relx=0.05, rely=0.05)
 
     def change_appearance_mode(self, new_appearance_mode: str):
         customtkinter.set_appearance_mode(new_appearance_mode)
 
     def change_map(self, new_map: str):
-        if new_map == "OpenStreetMap":
+        if new_map == "Google satellite":
+            self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=22)
+        elif new_map == "OpenStreetMap":
             self.map_widget.set_tile_server("https://a.tile.openstreetmap.org/{z}/{x}/{y}.png")
         elif new_map == "Google normal":
             self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=m&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=22)
-        elif new_map == "Google satellite":
-            self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=22)
 
 
     def on_closing(self, event=0):
