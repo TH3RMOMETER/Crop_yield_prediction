@@ -1,16 +1,25 @@
 from tensorflow import keras
+import numpy as np
+from tensorflow.keras import backend as K
 
 
+def root_mean_squared_error(y_true, y_pred):
+    return K.sqrt(K.mean(K.square(y_pred - y_true)))
 
-def get_weather_data(centroid, date):
-    return
 
-def get_sattelite_data(location_name, date):
-    return
+def get_data(data_set, location, date_range):
+    start_date = date_range[0]
+    end_date = date_range[-1]
+    data_set = data_set.query(
+        'date >= @start_date & date <= @end_date & name == @location')
+    data_set = data_set[['NDVI_mean', 'NDMI_mean',
+                         'NBSI_mean', 'tavg_shift', 'prcp_shift']]
+    return data_set.to_numpy()
 
-def create_sliding_window(data):
-    return
 
-def get_model():
-    return keras.models.load_model('tcn_ndvi.h5')
-
+def get_model_predictions(filepath: str, location: str, date_range=None):
+    model = keras.models.load_model(
+        filepath, custom_objects={'root_mean_squared_error': root_mean_squared_error})
+    data_set = pd.read_pickle('df_shift_14.pickle')
+    data = get_data(data_set=data_set, location=location, date_range=date_range)
+    return model.predict(data[np.newaxis, ...])
