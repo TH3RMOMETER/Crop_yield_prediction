@@ -1,5 +1,6 @@
 from tensorflow import keras
 import numpy as np
+import pandas as pd
 from tensorflow.keras import backend as K
 
 
@@ -10,10 +11,12 @@ def root_mean_squared_error(y_true, y_pred):
 def get_data(data_set, location, date_range):
     start_date = date_range[0]
     end_date = date_range[-1]
+    data_set['date'] = pd.to_datetime(data_set['date'])
     data_set = data_set.query(
         'date >= @start_date & date <= @end_date & name == @location')
     data_set = data_set[['NDVI_mean', 'NDMI_mean',
                          'NBSI_mean', 'tavg_shift', 'prcp_shift']]
+    
     return data_set.to_numpy()
 
 
