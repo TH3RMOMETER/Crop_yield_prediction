@@ -1,8 +1,11 @@
 import customtkinter
+import tkinter as tk
 from tkintermapview import TkinterMapView
 import geopandas as gpd
 import json
 import numpy as np
+import seaborn as sns
+from scipy.interpolate import interp1d
 import pandas as pd
 from datetime import datetime, timedelta
 #from meteostat import Daily, Point
@@ -130,14 +133,31 @@ class App(customtkinter.CTk):
 
         #self.button_6 = customtkinter.CTkButton(master=self.frame_pred, text="get frame", command= None)
         #self.button_6.grid(row=0, column=3, sticky="nswe", padx=(12,0), pady=(20,20))
-
+        
+        '''
         self.fig, self.ax = plt.subplots()
         self.fig.set_size_inches(9,8)
+        '''   
+        sns.set(style = "darkgrid")
+        self.fig, self.ax = plt.subplots(figsize = (9,5))
+        sns.lineplot()
         self.canvas = FigureCanvasTkAgg(self.fig,master=self.frame_pred)
         self.canvas.draw()
         self.canvas.get_tk_widget().place(relx=0.05, rely=0.05)
-
         
+
+        #=============== plot temp + prec =============
+
+        self.fig2, self.ax2 = plt.subplots(figsize =(4,3.5))
+        sns.lineplot()
+        self.canvas2 = FigureCanvasTkAgg(self.fig2,master=self.frame_pred)
+        self.canvas2.draw()
+        self.canvas2.get_tk_widget().place(relx = 0.05, rely = 0.6)
+
+        self.textbox = customtkinter.CTkTextbox(self, width=50)
+        self.textbox.grid(row=0, column=2, padx=(475, 0), pady=(560, 0), sticky="nsew")
+
+
     # ============ default values ============
         self.map_widget.set_address("Amsterdam")
         self.map_option_menu.set("OpenStreetMap")
@@ -212,8 +232,23 @@ class App(customtkinter.CTk):
 
                 #self.ndvi_pred = [pred - 1 for pred in self.ndvi_pred]
 
+                '''
                 self.ax.plot(self.daterange, self.ndvi_pred, label = name)
                 self.ax.set_title("NDVI Predictions")
+                self.ax.set_ylabel("NDVI value")
+                self.ax.set_xlabel("Date")
+                self.ax.legend(loc = 'upper right', frameon = True)
+                '''
+                #print(pd.to_datetime(self.daterange)).astype(float)
+                
+                X = np.linspace(0, len(self.daterange), len(self.daterange))
+                cubic_interpolation_model = interp1d(X, self.ndvi_pred, kind = "cubic")
+                X_= np.linspace(X.min(), X.max(), 500)
+                Y_= cubic_interpolation_model(X_.astype(float))
+                self.ax.plot(X_, Y_, label = name)
+                self.ax.set_title("NDVI Predictions")
+                self.ax.set_ylabel("NDVI value")
+                self.ax.set_xlabel("Days ahead")
                 self.ax.legend(loc = 'upper right', frameon = True)
                 self.canvas = FigureCanvasTkAgg(self.fig,master=self.frame_pred)
                 self.canvas.draw()
