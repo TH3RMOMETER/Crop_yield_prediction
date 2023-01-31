@@ -141,7 +141,7 @@ class App(customtkinter.CTk):
         self.fig.set_size_inches(9,8)
         '''   
         sns.set(style = "darkgrid")
-        self.fig, self.ax = plt.subplots(figsize = (9,5))
+        self.fig, self.ax = plt.subplots(figsize = (12.5,5))
         sns.lineplot()
         self.canvas = FigureCanvasTkAgg(self.fig,master=self.frame_pred)
         self.canvas.draw()
@@ -157,8 +157,9 @@ class App(customtkinter.CTk):
         self.canvas2.draw()
         self.canvas2.get_tk_widget().place(relx = 0.05, rely = 0.6)
 
-        self.textbox = customtkinter.CTkTextbox(self, width=50, height= 1000)
-        self.textbox.grid(row=0, column=2, padx=(800, 0), pady=(560, 0), sticky="nsew")
+        self.textbox = customtkinter.CTkTextbox(self)
+        self.textbox.grid(row=0, column=2, padx=(725,0), pady=(565, 0), sticky="nsew")
+        #self.textbox.grid(row = 0, column = 3)
 
 
     # ============ default values ============
@@ -238,9 +239,6 @@ class App(customtkinter.CTk):
 
                 m = (len(x) * np.sum(x*np.array(self.ndvi_pred)) - np.sum(x) * np.sum(np.array(self.ndvi_pred))) / (len(x)*np.sum(x*x) - np.sum(x) ** 2)
                
-
-                #self.ndvi_pred = [pred - 1 for pred in self.ndvi_pred]
-
                 '''
                 self.ax.plot(self.daterange, self.ndvi_pred, label = name)
                 self.ax.set_title("NDVI Predictions")
@@ -293,6 +291,7 @@ class App(customtkinter.CTk):
                 #self.weather.plot(ax=ax3, color='blue',x="date",y="prcp_shift", label = "Precipitation")
                 sns.lineplot(x = X3_, y = Y3_, color = 'mediumslateblue')
                 ax4.set_ylabel('Precipitation MM')
+                self.ax.set_xlabel("Days ahead")
                 plt.title("Weather prediction, 14 days", fontsize=15)
 
                 self.canvas2 = FigureCanvasTkAgg(fig3, master=self.frame_pred)
@@ -300,9 +299,9 @@ class App(customtkinter.CTk):
                 self.canvas2.get_tk_widget().place(relx = 0.05, rely = 0.6)
 
                 if m < 0:
-                    self.textbox.insert("0.0", "Actions:\n\n" + "Irrigate or fertilize your plot!\n\n")
+                    self.textbox.insert("0.0", "Actions:\n" + "Irrigate or fertilize your plot!\n\n")
                 else:
-                    self.textbox.insert("0.0", "Actions:\n\n" + "Crop yield is going up!\n\n")
+                    self.textbox.insert("0.0", "Actions:\n" + "Crop yield is going up!\n\n")
 
     def change_appearance_mode(self, new_appearance_mode: str):
         customtkinter.set_appearance_mode(new_appearance_mode)
