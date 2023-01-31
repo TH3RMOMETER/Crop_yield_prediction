@@ -33,3 +33,4 @@ def get_model_predictions(filepath: str, location: str, date_range=None):
     data_set = pd.read_pickle('df_shift_14.pickle')
     data = get_data(data_set=data_set, location=location, date_range=date_range)
     return model.predict(data[np.newaxis, ...])
+    
