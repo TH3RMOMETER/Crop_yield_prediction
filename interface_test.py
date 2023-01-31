@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 #from meteostat import Daily, Point
 from shapely.geometry import Polygon, mapping
 import shapely as sh
-from model import get_model_predictions
+from model import get_model_predictions, get_weather
 #import seaborn as sns
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
@@ -19,6 +19,8 @@ polygon = gpd.read_file('agri_46.geojson')
 polygon["centroid"] = polygon.geometry.centroid
 #print(list(polygon['name']))
 
+# 2020-05-01 for INCREASING NDVI values
+# 2020-01-01 for DECREASING NDVI values
 model_path = r'/home/maxim/Documents/GitHub/Crop_yield_prediction/tcn_tf/content/tcn_nvdi.tf'
 
 with open('agri_46.geojson') as f:
@@ -148,14 +150,15 @@ class App(customtkinter.CTk):
 
         #=============== plot temp + prec =============
 
-        self.fig2, self.ax2 = plt.subplots(figsize =(4,3.5))
+        self.fig2, self.ax2 = plt.subplots(figsize =(6.5,3.75))
         sns.lineplot()
+        sns.set_style("white")
         self.canvas2 = FigureCanvasTkAgg(self.fig2,master=self.frame_pred)
         self.canvas2.draw()
         self.canvas2.get_tk_widget().place(relx = 0.05, rely = 0.6)
 
-        self.textbox = customtkinter.CTkTextbox(self, width=50)
-        self.textbox.grid(row=0, column=2, padx=(475, 0), pady=(560, 0), sticky="nsew")
+        self.textbox = customtkinter.CTkTextbox(self, width=50, height= 1000)
+        self.textbox.grid(row=0, column=2, padx=(800, 0), pady=(560, 0), sticky="nsew")
 
 
     # ============ default values ============
@@ -172,7 +175,7 @@ class App(customtkinter.CTk):
     def set_marker_event(self):
         current_position = self.map_widget.get_position()
         self.marker_list.append(self.map_widget.set_marker(current_position[0], current_position[1]))
-        print(current_position)
+        #print(current_position)
 
     def clear_marker_event(self):
         for marker in self.marker_list:
@@ -182,7 +185,7 @@ class App(customtkinter.CTk):
         poly_mapped = mapping(poly)
         poly_coordinates = poly_mapped['coordinates'][0]
         poly_ = [(coords[1],coords[0]) for coords in poly_coordinates]
-        print(json.dumps(poly_))
+        #print(json.dumps(poly_))
 
 
     def plot_ndvi(self, poly):
@@ -195,7 +198,7 @@ class App(customtkinter.CTk):
         self.start_date = self.entry_date.get()
         self.end_date = datetime.strptime(self.start_date, '%Y-%m-%d') + timedelta(days=13)
 
-        print(self.start_date,self.end_date)
+        #print(self.start_date,self.end_date)
 
         self.daterange = pd.date_range(self.start_date, self.end_date, freq = 'd')
         self.ndvi_pred = get_model_predictions(model_path,poly,self.daterange)[0]
@@ -225,10 +228,16 @@ class App(customtkinter.CTk):
                 self.start_date = self.entry_date.get()
                 self.end_date = datetime.strptime(self.start_date, '%Y-%m-%d') + timedelta(days=13)
 
-                print(self.start_date,self.end_date)
+                #print(self.start_date,self.end_date)
 
                 self.daterange = pd.date_range(self.start_date, self.end_date, freq = 'd')
-                self.ndvi_pred = get_model_predictions(model_path,poly[0],self.daterange)[0]
+                self.ndvi_pred= get_model_predictions(model_path,poly[0],self.daterange)[0]
+                #print(self.ndvi_pred)
+
+                x = np.array(list(range(1,15)))
+
+                m = (len(x) * np.sum(x*np.array(self.ndvi_pred)) - np.sum(x) * np.sum(np.array(self.ndvi_pred))) / (len(x)*np.sum(x*x) - np.sum(x) ** 2)
+               
 
                 #self.ndvi_pred = [pred - 1 for pred in self.ndvi_pred]
 
@@ -240,11 +249,14 @@ class App(customtkinter.CTk):
                 self.ax.legend(loc = 'upper right', frameon = True)
                 '''
                 #print(pd.to_datetime(self.daterange)).astype(float)
+
+                sns.set_palette("pastel")
                 
                 X = np.linspace(0, len(self.daterange), len(self.daterange))
                 cubic_interpolation_model = interp1d(X, self.ndvi_pred, kind = "cubic")
                 X_= np.linspace(X.min(), X.max(), 500)
                 Y_= cubic_interpolation_model(X_.astype(float))
+
                 self.ax.plot(X_, Y_, label = name)
                 self.ax.set_title("NDVI Predictions")
                 self.ax.set_ylabel("NDVI value")
@@ -253,6 +265,44 @@ class App(customtkinter.CTk):
                 self.canvas = FigureCanvasTkAgg(self.fig,master=self.frame_pred)
                 self.canvas.draw()
                 self.canvas.get_tk_widget().place(relx=0.05, rely=0.05)
+
+                self.weather= get_weather(poly[0],self.daterange)
+                self.temp = self.weather['tavg_shift']
+                self.prcp = self.weather['prcp_shift']
+
+                X2 = np.linspace(0, len(self.temp), len(self.temp))
+                cubic_interpolation_model = interp1d(X2, self.temp, kind = "cubic")
+                X2_= np.linspace(X2.min(), X2.max(), 500)
+                Y2_= cubic_interpolation_model(X2_.astype(float))
+
+                X3 = np.linspace(0, len(self.prcp), len(self.prcp))
+                cubic_interpolation_model = interp1d(X3, self.prcp, kind = "cubic")
+                X3_= np.linspace(X3.min(), X3.max(), 500)
+                Y3_= cubic_interpolation_model(X3_.astype(float))
+        
+                sns.set_style("dark")
+
+                fig3 = plt.figure(figsize =(6.5,3.75))
+                ax3 = fig3.add_subplot()
+                #self.weather.plot(ax=ax3, color='red',x="date",y="tavg_shift", label = "Temperature")
+                sns.lineplot(x = X2_, y = Y2_, color='tomato')
+                ax3.set_ylabel('Temperature Dgr. C')
+                days_ahead = list(range(1,15))
+                ax3.set_xticklabels(days_ahead)
+                ax4 = ax3.twinx()
+                #self.weather.plot(ax=ax3, color='blue',x="date",y="prcp_shift", label = "Precipitation")
+                sns.lineplot(x = X3_, y = Y3_, color = 'mediumslateblue')
+                ax4.set_ylabel('Precipitation MM')
+                plt.title("Weather prediction, 14 days", fontsize=15)
+
+                self.canvas2 = FigureCanvasTkAgg(fig3, master=self.frame_pred)
+                self.canvas2.draw()
+                self.canvas2.get_tk_widget().place(relx = 0.05, rely = 0.6)
+
+                if m < 0:
+                    self.textbox.insert("0.0", "Actions:\n\n" + "Irrigate or fertilize your plot!\n\n")
+                else:
+                    self.textbox.insert("0.0", "Actions:\n\n" + "Crop yield is going up!\n\n")
 
     def change_appearance_mode(self, new_appearance_mode: str):
         customtkinter.set_appearance_mode(new_appearance_mode)
